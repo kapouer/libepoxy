@@ -1,0 +1,23 @@
+From: Yaron Cohen-Tal <yaronct@gmail.com>
+Date: Fri, 29 Jul 2016 17:55:49 +0300
+Subject: [PATCH] Fox some X server not supporting any OpenGL feature,
+ glXQueryExtensionsString will return NULL and causes the function to fail.
+ Thanx to Emmanuel Stapf (manus@eiffel.com) for the original patch.
+
+This was verified running an application on macOS while the X server was running
+on Windows Xming 7.5.0.10
+---
+ src/dispatch_common.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/src/dispatch_common.c
++++ b/src/dispatch_common.c
+@@ -347,6 +347,8 @@
+ bool
+ epoxy_extension_in_string(const char *extension_list, const char *ext)
+ {
++    if (!extension_list)
++        return false;
+     const char *ptr = extension_list;
+     int len = strlen(ext);
+ 

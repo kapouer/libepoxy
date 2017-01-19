@@ -1,0 +1,50 @@
+From: Yaron Cohen-Tal <yaronct@gmail.com>
+Date: Mon, 21 Sep 2015 19:58:03 +0300
+Subject: [PATCH] Fix "epoxy_egl_get_current_gl_context_api" to use
+ "eglQueryContext" with "EGL_CONTEXT_CLIENT_TYPE" as "attribute".
+
+---
+ src/dispatch_common.c | 32 +++++++-------------------------
+ 1 file changed, 7 insertions(+), 25 deletions(-)
+
+--- a/src/dispatch_common.c
++++ b/src/dispatch_common.c
+@@ -569,31 +569,13 @@
+ static EGLenum
+ epoxy_egl_get_current_gl_context_api(void)
+ {
+-    EGLenum save_api = eglQueryAPI();
+-    EGLContext ctx;
+-
+-    if (eglBindAPI(EGL_OPENGL_API)) {
+-        ctx = eglGetCurrentContext();
+-        if (ctx) {
+-            eglBindAPI(save_api);
+-            return EGL_OPENGL_API;
+-        }
+-    } else {
+-        (void)eglGetError();
+-    }
+-
+-    if (eglBindAPI(EGL_OPENGL_ES_API)) {
+-        ctx = eglGetCurrentContext();
+-        eglBindAPI(save_api);
+-        if (ctx) {
+-            eglBindAPI(save_api);
+-            return EGL_OPENGL_ES_API;
+-        }
+-    } else {
+-        (void)eglGetError();
+-    }
+-
+-    return EGL_NONE;
++    EGLDisplay eglDisplay = eglGetCurrentDisplay();
++    EGLContext eglContext = eglGetCurrentContext();
++    EGLint eglContextClientType = EGL_NONE;
++    return      eglQueryContext(eglDisplay, eglContext, EGL_CONTEXT_CLIENT_TYPE,
++                                &eglContextClientType) == EGL_TRUE
++           ?    (EGLenum)eglContextClientType
++           :    EGL_NONE;
+ }
+ #endif /* PLATFORM_HAS_EGL */
+ 
