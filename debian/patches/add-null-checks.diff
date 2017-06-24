@@ -1,0 +1,47 @@
+Description: couple of null checks, avoids rare failure conditions
+Forwarded: not-needed, applied upstream
+Author: Gianfranco Costamagna <locutusofborg@debian.org>
+Last-Update: 2017-06-24
+--- libepoxy-1.3.1.orig/src/dispatch_common.c
++++ libepoxy-1.3.1/src/dispatch_common.c
+@@ -347,7 +347,7 @@ epoxy_conservative_gl_version(void)
+ bool
+ epoxy_extension_in_string(const char *extension_list, const char *ext)
+ {
+-    if (!extension_list)
++    if (!extension_list || !ext)
+         return false;
+     const char *ptr = extension_list;
+     int len = strlen(ext);
+@@ -382,6 +382,7 @@ epoxy_internal_has_gl_extension(const ch
+ 
+         for (i = 0; i < num_extensions; i++) {
+             const char *gl_ext = (const char *)glGetStringi(GL_EXTENSIONS, i);
++            if(! gl_ext) return false;
+             if (strcmp(ext, gl_ext) == 0)
+                 return true;
+         }
+--- libepoxy-1.3.1.orig/src/dispatch_egl.c
++++ libepoxy-1.3.1/src/dispatch_egl.c
+@@ -43,12 +43,16 @@ epoxy_egl_version(EGLDisplay dpy)
+ {
+     int major, minor;
+     const char *version_string;
+-    int ret;
++    int ret=0, sscanf_ret;
+ 
+-    version_string = eglQueryString(dpy, EGL_VERSION);
+-    ret = sscanf(version_string, "%d.%d", &major, &minor);
+-    assert(ret == 2);
+-    return major * 10 + minor;
++    if ((version_string = eglQueryString(dpy, EGL_VERSION)))
++    {
++        sscanf_ret = sscanf(version_string, "%d.%d", &major, &minor);
++        assert(sscanf_ret == 2);
++        ret = major * 10 + minor;
++    }
++
++    return ret;
+ }
+ 
+ bool
